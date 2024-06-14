@@ -61,7 +61,6 @@ type RenderArgs = {
 }
 async function renderPageClientSide(renderArgs: RenderArgs): Promise<void> {
   const {
-    scrollTarget,
     urlOriginal = getCurrentUrl(),
     overwriteLastHistoryEntry = false,
     isBackwardNavigation,
@@ -70,6 +69,7 @@ async function renderPageClientSide(renderArgs: RenderArgs): Promise<void> {
     isUserLandPushStateNavigation,
     isClientSideNavigation = true
   } = renderArgs
+  let { scrollTarget } = renderArgs
 
   // isHydrationRender <=> the first render attempt
   const { isRenderOutdated, setHydrationCanBeAborted, isHydrationRender } = getIsRenderOutdated()
@@ -385,6 +385,7 @@ async function renderPageClientSide(renderArgs: RenderArgs): Promise<void> {
       if (isRenderOutdated()) return
     }
     changeUrl(urlOriginal, overwriteLastHistoryEntry)
+    const { previousPageContext } = globalObject
     globalObject.previousPageContext = pageContext
     assert(globalObject.onRenderClientPromise === undefined)
     globalObject.onRenderClientPromise = (async () => {
@@ -445,6 +446,14 @@ async function renderPageClientSide(renderArgs: RenderArgs): Promise<void> {
           if (!isErrorPage) return
         }
         if (isRenderOutdated(true)) return
+      }
+    }
+
+    if (!scrollTarget && previousPageContext) {
+      const scrollPrev = getScrollSetting(previousPageContext)
+      const scroll = getScrollSetting(pageContext)
+      if (scroll !== true && scroll !== undefined && scroll === scrollPrev) {
+        scrollTarget = { preserveScroll: true }
       }
     }
 
@@ -539,7 +548,11 @@ function getIsRenderOutdated() {
     isHydrationRender: renderNumber === 1
   }
 }
-
 function getRenderCount(): number {
   return globalObject.renderCounter
+}
+
+function getScrollSetting(pageContext: PageContextExports & Record<string, unknown>) {
+  const scroll = pageContext.config.scroll as undefined | boolean | string
+  return scroll
 }

@@ -185,6 +185,9 @@ const configDefinitionsBuiltIn: ConfigDefinitionsBuiltIn = {
   },
   require: {
     env: { config: true }
+  },
+  scroll: {
+    env: { client: true }
   }
 }
 
